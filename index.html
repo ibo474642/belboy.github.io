@@ -91,6 +91,15 @@
                 <label for="date">Tarih:</label>
                 <input type="date" id="date" max="" required>
             </div>
+            <div class="form-group">
+                <label for="currency">Döviz Tipi:</label>
+                <select id="currency">
+                    <option value="TL" selected>TL</option>
+                    <option value="USD">USD</option>
+                    <option value="EUR">EUR</option>
+                    <option value="GBP">GBP</option>
+                </select>
+            </div>
             <div class="animated-exchange" id="exchangeRates">
                 <div class="currency-badge usd">
                     <div class="currency-content">
@@ -126,15 +135,6 @@
             </div>
         </div>
         
-        <div class="form-group">
-            <label for="currency">Döviz Tipi:</label>
-            <select id="currency">
-                <option value="TL" selected>TL</option>
-                <option value="USD">USD</option>
-                <option value="EUR">EUR</option>
-                <option value="GBP">GBP</option>
-            </select>
-        </div>
         <div class="form-group">
             <label>Ödeme Durumu:</label>
             <div class="radio-group">
