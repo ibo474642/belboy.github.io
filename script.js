@@ -341,13 +341,15 @@ function showToast(message, type = 'success') {
 
 async function fetchExchangeRates() {
     try {
-        const response = await fetch('https://api.exchangerate-api.com/v4/latest/TRY');
-        if (!response.ok) throw new Error('API isteği başarısız');
+        const response = await fetch('https://api.exchangerate-api.com/v4/latest/TRY', {
+            cache: 'no-store' // Önbelleği devre dışı bırakarak her zaman güncel veri al
+        });
+        if (!response.ok) throw new Error(`API isteği başarısız: ${response.status}`);
         const data = await response.json();
         const rates = {
-            USD: 1 / data.rates.USD,
-            EUR: 1 / data.rates.EUR,
-            GBP: 1 / data.rates.GBP,
+            USD: 1 / (data.rates.USD || 1),
+            EUR: 1 / (data.rates.EUR || 1),
+            GBP: 1 / (data.rates.GBP || 1),
             lastUpdated: new Date().toISOString()
         };
         await dbOperations.saveSetting('exchangeRates', rates);
@@ -355,10 +357,30 @@ async function fetchExchangeRates() {
         updateExchangeRateDisplay(rates);
         document.getElementById('manualRates').style.display = 'none';
         showToast('Döviz kurları başarıyla güncellendi!', 'success');
+        return rates;
     } catch (error) {
         console.error('Döviz kurları alınırken hata:', error);
-        showToast('Döviz kurları alınamadı, manuel giriş kullanılıyor.', 'error');
-        document.getElementById('manualRates').style.display = 'block';
+        showToast('Döviz kurları alınamadı, son kaydedilen kurlar kullanılıyor.', 'error');
+        const cached = await dbOperations.getSetting('exchangeRates');
+        if (cached) {
+            exchangeRates = cached;
+            updateExchangeRateDisplay(cached);
+            document.getElementById('manualRates').style.display = 'block';
+            return cached;
+        } else {
+            // Varsayılan kurlar (hata durumunda sıfır bölme önlemek için)
+            const fallbackRates = {
+                USD: 32.45,
+                EUR: 35.18,
+                GBP: 41.32,
+                lastUpdated: new Date().toISOString()
+            };
+            exchangeRates = fallbackRates;
+            updateExchangeRateDisplay(fallbackRates);
+            document.getElementById('manualRates').style.display = 'block';
+            showToast('Kur bilgisi yüklenemedi, varsayılan kurlar kullanılıyor.', 'error');
+            return fallbackRates;
+        }
     }
 }
 
