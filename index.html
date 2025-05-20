@@ -1,74 +1,30 @@
-<script type="text/javascript">
-        var gk_isXlsx = false;
-        var gk_xlsxFileLookup = {};
-        var gk_fileData = {};
-        function filledCell(cell) {
-          return cell !== '' && cell != null;
-        }
-        function loadFileData(filename) {
-        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
-            try {
-                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
-                var firstSheetName = workbook.SheetNames[0];
-                var worksheet = workbook.Sheets[firstSheetName];
-
-                // Convert sheet to JSON to filter blank rows
-                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
-                // Filter out blank rows (rows where all cells are empty, null, or undefined)
-                var filteredData = jsonData.filter(row => row.some(filledCell));
-
-                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
-                var headerRowIndex = filteredData.findIndex((row, index) =>
-                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
-                );
-                // Fallback
-                if (headerRowIndex === -1 || headerRowIndex > 25) {
-                  headerRowIndex = 0;
-                }
-
-                // Convert filtered JSON back to CSV
-                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
-                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
-                return csv;
-            } catch (e) {
-                console.error(e);
-                return "";
-            }
-        }
-        return gk_fileData[filename] || "";
-        }
-        </script><!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Oda Gelir Takip</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/lz-string@1.4.4/libs/lz-string.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
     <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/lz-string"></script>
 </head>
 <body>
-    <div class="container">
-        <button class="menu-button" id="menuButton" aria-label="Menüyü aç veya kapat">☰ Menü</button>
-        <div class="menu" id="menu">
-            <div class="refresh-rates">
-                <button class="refresh-button" id="refreshRatesButton" aria-label="Döviz kurlarını yenile">
-                    <span>🔄</span> Kurları Yenile
-                </button>
-            </div>
-            <div class="last-update" id="lastUpdate">Son Güncelleme: Yükleniyor...</div>
-            <div class="menu-item" id="unpaidMenu" role="button" tabindex="0" aria-label="Vermeyenler listesini göster">Vermeyenler</div>
-            <div class="menu-item" id="paidMenu" role="button" tabindex="0" aria-label="Verenler listesini göster">Verenler</div>
-            <div class="menu-item" id="lastTransactionsMenu" role="button" tabindex="0" aria-label="Son işlemleri göster">Son İşlemler</div>
-            <div class="menu-item" id="reportMenu" role="button" tabindex="0" aria-label="Raporları göster">Raporlar</div>
-            <div class="menu-item" id="statsMenu" role="button" tabindex="0" aria-label="İstatistikleri göster">İstatistikler</div>
-            <div class="menu-item" id="accountingMenu" role="button" tabindex="0" aria-label="Muhasebe ekranını göster">Muhasebe</div>
-            <div class="menu-item" id="storageMenu" role="button" tabindex="0" aria-label="Depolama durumunu göster">Depolama</div>
+    <div class="header">
+        <img src="https://i.hizliresim.com/83vyku0.png" alt="Oda Gelir Takip Logosu" alt="Logo">
+        <button id="menuButton" class="menu-button">☰ Menü</button>
+        <div id="menu" class="menu">
+            <div button id="refreshRatesButton" class="refresh-button">🔄 Kurları Yenile</button></div>
+            <div id="unpaidMenu" class="menu-item">Vermeyenler</div>
+            <div id="paidMenu" class="menu-item">Verenler</div>
+            <div id="lastTransactionsMenu" class="menu-item">Son İşlemler</div>
+            <div id="reportMenu" class="menu-item">Raporlar</div>
+            <div id="statsMenu" class="menu-item">İstatistikler</div>
+            <div id="accountingMenu" class="menu-item">Muhasebe</div>
+            <div id="storageMenu" class="menu-item">Depolama</div>
             <div class="theme-switch-container">
-                <label class="theme-switch" aria-label="Tema değiştir">
-                    <input type="checkbox" id="themeToggle" aria-label="Koyu ve açık tema arasında geçiş yap">
+                <label class="theme-switch">
+                    <input type="checkbox" id="themeToggle">
                     <span class="slider">
                         <span class="moon">🌙</span>
                         <span class="sun">☀️</span>
@@ -76,31 +32,54 @@
                 </label>
             </div>
         </div>
-        
-        <div class="header">
-            <img src="https://i.hizliresim.com/83vyku0.png" alt="Oda Gelir Takip Logosu">
-        </div>
-        
-        <div class="form-group">
-            <label for="roomNumber">Oda No:</label>
-            <input type="text" id="roomNumber" placeholder="Oda numarasını girin" inputmode="numeric" pattern="[0-9]+" required>
-        </div>
-        
-        <div class="exchange-container">
-            <div class="date-filter-item">
+    </div>
+
+
+
+    <div class="container">
+        <div class="date-currency-row">
+            <div class="form-group">
                 <label for="date">Tarih:</label>
-                <input type="date" id="date" max="" required>
+                <input type="date" id="date" name="date">
             </div>
             <div class="form-group">
                 <label for="currency">Döviz Tipi:</label>
-                <select id="currency">
-                    <option value="TL" selected>TL</option>
+                <select id="currency" name="currency">
+                    <option value="TL">TL</option>
                     <option value="USD">USD</option>
                     <option value="EUR">EUR</option>
                     <option value="GBP">GBP</option>
                 </select>
             </div>
-            <div class="animated-exchange" id="exchangeRates">
+        </div>
+        <div class="form-group">
+            <label>Oda No:</label>
+            <input type="text" id="roomNumber" placeholder="Oda numarasını girin">
+        </div>
+        <div class="form-group">
+            <label>Ödeme Durumu:</label>
+            <div class="radio-group">
+                <label class="radio-option">
+                    VERMEDİ
+                    <input type="radio" id="notPaid" name="paymentStatus" value="notPaid" checked>
+                    <span class="custom-radio"></span>
+                </label>
+                <label class="radio-option">
+                    VERDİ
+                    <input type="radio" id="customAmount" name="paymentStatus" value="customAmount">
+                    <span class="custom-radio"></span>
+                </label>
+            </div>
+        </div>
+        <div class="form-group">
+            <input type="number" id="amountInput" class="amount-input" placeholder="Tutar" disabled>
+        </div>
+        <button id="saveButton">Kaydet</button>
+    </div>
+    
+        <div class="container">
+        <div class="exchange-container">
+            <div class="animated-exchange">
                 <div class="currency-badge usd">
                     <div class="currency-content">
                         <span class="currency-icon">💵</span>
@@ -120,67 +99,42 @@
                     </div>
                 </div>
             </div>
+            
         </div>
-        
-        <div class="manual-rates" id="manualRates">
+        <div id="lastUpdate" class="last-update">Son Güncelleme: Yükleniyor...</div>
+        <div id="manualRates" class="manual-rates">
             <h4>Manuel Kur Girişi</h4>
-            <div>
-                <label for="manualUSD">USD:</label>
-                <input type="number" id="manualUSD" step="0.01" placeholder="32.45" min="0">
-                <label for="manualEUR">EUR:</label>
-                <input type="number" id="manualEUR" step="0.01" placeholder="35.18" min="0">
-                <label for="manualGBP">GBP:</label>
-                <input type="number" id="manualGBP" step="0.01" placeholder="41.32" min="0">
-                <button onclick="saveManualRates()" aria-label="Manuel kurları kaydet">Kaydet</button>
-            </div>
+            <label>USD: <input type="number" id="manualUSD" step="0.01"></label>
+            <label>EUR: <input type="number" id="manualEUR" step="0.01"></label>
+            <label>GBP: <input type="number" id="manualGBP" step="0.01"></label>
+            <button onclick="saveManualRates()">Kaydet</button>
         </div>
-        
-        <div class="form-group">
-            <label>Ödeme Durumu:</label>
-            <div class="radio-group">
-                <div class="radio-option" id="notPaidOption">
-                    <label class="radio-label" for="notPaid">VERMEDİ</label>
-                    <input type="radio" id="notPaid" name="amount" value="VERMEDİ" checked>
-                    <span class="custom-radio"></span>
-                </div>
-                <div class="radio-option" id="customAmountOption">
-                    <label class="radio-label" for="customAmount">VERDİ</label>
-                    <input type="radio" id="customAmount" name="amount" value="custom">
-                    <span class="custom-radio"></span>
-                </div>
-                <input type="number" id="amountInput" class="amount-input" placeholder="Tutar girin" disabled min="0" step="0.01">
-            </div>
-        </div>
-        <button id="saveButton" aria-label="Verileri kaydet">Kaydet</button>
     </div>
 
     <div id="unpaidModal" class="modal">
         <div class="modal-content">
-            <span class="close-button" onclick="closeModal('unpaidModal')" role="button" tabindex="0" aria-label="Vermeyenler modalını kapat">×</span>
+            <span class="close-button" onclick="closeModal('unpaidModal')">×</span>
             <h2>Vermeyenler Listesi</h2>
-            <div class="date-filter-container">
-                <div class="time-range-selector">
-                    <select id="unpaidTimeRange" onchange="updateUnpaidDateRange()" aria-label="Vermeyenler için zaman aralığı seç">
-                        <option value="today">Bugün</option>
-                        <option value="yesterday">Dün</option>
-                        <option value="lastWeek">Son 7 Gün</option>
-                        <option value="lastMonth">Son 30 Gün</option>
-                        <option value="custom">Özel Tarih</option>
-                    </select>
-                </div>
-                <div class="date-filter" id="unpaidDateFilter" style="display:none">
-                    <div class="date-filter-item">
-                        <label for="unpaidStartDate">Başlangıç Tarihi</label>
-                        <input type="date" id="unpaidStartDate" max="">
-                    </div>
-                    <div class="date-filter-item">
-                        <label for="unpaidEndDate">Bitiş Tarihi</label>
-                        <input type="date" id="unpaidEndDate" max="">
-                    </div>
-                </div>
-                <button class="filter-button" onclick="filterUnpaidTable()" aria-label="Vermeyenler listesini filtrele">Filtrele</button>
+            <div class="time-range-selector">
+                <select id="unpaidTimeRange" onchange="updateUnpaidDateRange()">
+                    <option value="today">Bugün</option>
+                    <option value="yesterday">Dün</option>
+                    <option value="lastWeek">Son 7 Gün</option>
+                    <option value="lastMonth">Son 30 Gün</option>
+                    <option value="custom">Özel Tarih</option>
+                </select>
             </div>
-            <div id="unpaidTotal" class="single-total"></div>
+            <div id="unpaidDateFilter" class="date-filter" style="display: none;">
+                <div class="date-filter-item">
+                    <label>Başlangıç Tarihi</label>
+                    <input type="date" id="unpaidStartDate">
+                </div>
+                <div class="date-filter-item">
+                    <label>Bitiş Tarihi</label>
+                    <input type="date" id="unpaidEndDate">
+                </div>
+            </div>
+            <button class="filter-button" onclick="filterUnpaidTable()">Filtrele</button>
             <table id="unpaidTable">
                 <thead>
                     <tr>
@@ -191,47 +145,44 @@
                 </thead>
                 <tbody></tbody>
             </table>
+            <div id="unpaidTotal" class="single-total"></div>
         </div>
     </div>
 
     <div id="paidModal" class="modal">
         <div class="modal-content">
-            <span class="close-button" onclick="closeModal('paidModal')" role="button" tabindex="0" aria-label="Verenler modalını kapat">×</span>
+            <span class="close-button" onclick="closeModal('paidModal')">×</span>
             <h2>Verenler Listesi</h2>
-            <div class="date-filter-container">
-                <div class="currency-selector">
-                    <label for="paidCurrency">Döviz:</label>
-                    <select id="paidCurrency" onchange="filterPaidTable()" aria-label="Verenler için döviz tipi seç">
-                        <option value="all">Tümü</option>
-                        <option value="TL">TL</option>
-                        <option value="USD">USD</option>
-                        <option value="EUR">EUR</option>
-                        <option value="GBP">GBP</option>
-                    </select>
-                </div>
-                <div class="time-range-selector">
-                    <select id="paidTimeRange" onchange="updatePaidDateRange()" aria-label="Verenler için zaman aralığı seç">
-                        <option value="today">Bugün</option>
-                        <option value="yesterday">Dün</option>
-                        <option value="lastWeek">Son 7 Gün</option>
-                        <option value="lastMonth">Son 30 Gün</option>
-                        <option value="custom">Özel Tarih</option>
-                    </select>
-                </div>
-                <div class="date-filter" id="paidDateFilter" style="display:none">
-                    <div class="date-filter-item">
-                        <label for="paidStartDate">Başlangıç Tarihi</label>
-                        <input type="date" id="paidStartDate" max="">
-                    </div>
-                    <div class="date-filter-item">
-                        <label for="paidEndDate">Bitiş Tarihi</label>
-                        <input type="date" id="paidEndDate" max="">
-                    </div>
-                </div>
-                <button class="filter-button" onclick="filterPaidTable()" aria-label="Verenler listesini filtrele">Filtrele</button>
+            <div class="currency-selector">
+                <label>Döviz:</label>
+                <select id="paidCurrency">
+                    <option value="all">Tümü</option>
+                    <option value="TL">TL</option>
+                    <option value="USD">USD</option>
+                    <option value="EUR">EUR</option>
+                    <option value="GBP">GBP</option>
+                </select>
             </div>
-            <div id="paidTotalSingle" class="single-total"></div>
-            <div id="paidAllTotals" class="total-container"></div>
+            <div class="time-range-selector">
+                <select id="paidTimeRange" onchange="updatePaidDateRange()">
+                    <option value="today">Bugün</option>
+                    <option value="yesterday">Dün</option>
+                    <option value="lastWeek">Son 7 Gün</option>
+                    <option value="lastMonth">Son 30 Gün</option>
+                    <option value="custom">Özel Tarih</option>
+                </select>
+            </div>
+            <div id="paidDateFilter" class="date-filter" style="display: none;">
+                <div class="date-filter-item">
+                    <label>Başlangıç Tarihi</label>
+                    <input type="date" id="paidStartDate">
+                </div>
+                <div class="date-filter-item">
+                    <label>Bitiş Tarihi</label>
+                    <input type="date" id="paidEndDate">
+                </div>
+            </div>
+            <button class="filter-button" onclick="filterPaidTable()">Filtrele</button>
             <table id="paidTable">
                 <thead>
                     <tr>
@@ -243,47 +194,45 @@
                 </thead>
                 <tbody></tbody>
             </table>
+            <div id="paidTotalSingle" class="single-total"></div>
+            <div id="paidAllTotals" class="total-container"></div>
         </div>
     </div>
 
     <div id="lastTransactionsModal" class="modal">
         <div class="modal-content">
-            <span class="close-button" onclick="closeModal('lastTransactionsModal')" role="button" tabindex="0" aria-label="Son işlemler modalını kapat">×</span>
+            <span class="close-button" onclick="closeModal('lastTransactionsModal')">×</span>
             <h2>Son İşlemler</h2>
-            <div class="container">
-                <div class="currency-selector">
-                    <label for="transactionsCurrency">Döviz:</label>
-                    <select id="transactionsCurrency" onchange="filterTransactionsTable()" aria-label="Son işlemler için döviz tipi seç">
-                        <option value="all">Tümü</option>
-                        <option value="TL">TL</option>
-                        <option value="USD">USD</option>
-                        <option value="EUR">EUR</option>
-                        <option value="GBP">GBP</option>
-                    </select>
-                </div>
-                <div class="time-range-selector">
-                    <select id="transactionsTimeRange" onchange="updateTransactionsDateRange()" aria-label="Son işlemler için zaman aralığı seç">
-                        <option value="today">Bugün</option>
-                        <option value="yesterday">Dün</option>
-                        <option value="lastWeek">Son 7 Gün</option>
-                        <option value="lastMonth">Son 30 Gün</option>
-                        <option value="custom">Özel Tarih</option>
-                    </select>
-                </div>
-                <div class="date-filter" id="transactionsDateFilter" style="display:none">
-                    <div class="date-filter-item">
-                        <label for="transactionsStartDate">Başlangıç Tarihi</label>
-                        <input type="date" id="transactionsStartDate" max="">
-                    </div>
-                    <div class="date-filter-item">
-                        <label for="transactionsEndDate">Bitiş Tarihi</label>
-                        <input type="date" id="transactionsEndDate" max="">
-                    </div>
-                </div>
-                <button class="filter-button" onclick="filterTransactionsTable()" aria-label="Son işlemleri filtrele">Filtrele</button>
+            <div class="currency-selector">
+                <label>Döviz:</label>
+                <select id="transactionsCurrency">
+                    <option value="all">Tümü</option>
+                    <option value="TL">TL</option>
+                    <option value="USD">USD</option>
+                    <option value="EUR">EUR</option>
+                    <option value="GBP">GBP</option>
+                </select>
             </div>
-            <div id="transactionsTotalSingle" class="single-total"></div>
-            <div id="transactionsAllTotals" class="total-container"></div>
+            <div class="time-range-selector">
+                <select id="transactionsTimeRange" onchange="updateTransactionsDateRange()">
+                    <option value="today">Bugün</option>
+                    <option value="yesterday">Dün</option>
+                    <option value="lastWeek">Son 7 Gün</option>
+                    <option value="lastMonth">Son 30 Gün</option>
+                    <option value="custom">Özel Tarih</option>
+                </select>
+            </div>
+            <div id="transactionsDateFilter" class="date-filter" style="display: none;">
+                <div class="date-filter-item">
+                    <label>Başlangıç Tarihi</label>
+                    <input type="date" id="transactionsStartDate">
+                </div>
+                <div class="date-filter-item">
+                    <label>Bitiş Tarihi</label>
+                    <input type="date" id="transactionsEndDate">
+                </div>
+            </div>
+            <button class="filter-button" onclick="filterTransactionsTable()">Filtrele</button>
             <table id="lastTransactionsTable">
                 <thead>
                     <tr>
@@ -296,28 +245,30 @@
                 </thead>
                 <tbody></tbody>
             </table>
+            <div id="transactionsTotalSingle" class="single-total"></div>
+            <div id="transactionsAllTotals" class="total-container"></div>
         </div>
     </div>
 
     <div id="reportModal" class="modal">
         <div class="modal-content">
-            <span class="close-button" onclick="closeModal('reportModal')" role="button" tabindex="0" aria-label="Raporlar modalını kapat">×</span>
+            <span class="close-button" onclick="closeModal('reportModal')">×</span>
             <h2>Gelir Raporları</h2>
             <div class="report-controls">
                 <div class="month-navigation">
-                    <span class="nav-arrow" onclick="changeMonth(-1)" role="button" tabindex="0" aria-label="Önceki ay">❮</span>
+                    <span class="nav-arrow" onclick="changeMonth(-1)">❮</span>
                     <span id="currentMonth" class="current-month"></span>
-                    <span class="nav-arrow" onclick="changeMonth(1)" role="button" tabindex="0" aria-label="Sonraki ay">❯</span>
+                    <span class="nav-arrow" onclick="changeMonth(1)">❯</span>
                 </div>
                 <div class="currency-filter">
-                    <div class="currency-btn active" data-currency="TL" onclick="toggleCurrency('TL')" role="button" tabindex="0" aria-label="TL grafiğini göster">TL</div>
-                    <div class="currency-btn" data-currency="USD" onclick="toggleCurrency('USD')" role="button" tabindex="0" aria-label="USD grafiğini göster">USD</div>
-                    <div class="currency-btn" data-currency="EUR" onclick="toggleCurrency('EUR')" role="button" tabindex="0" aria-label="EUR grafiğini göster">EUR</div>
-                    <div class="currency-btn" data-currency="GBP" onclick="toggleCurrency('GBP')" role="button" tabindex="0" aria-label="GBP grafiğini göster">GBP</div>
+                    <span class="currency-btn active" data-currency="TL" onclick="toggleCurrency('TL')">TL</span>
+                    <span class="currency-btn" data-currency="USD" onclick="toggleCurrency('USD')">USD</span>
+                    <span class="currency-btn" data-currency="EUR" onclick="toggleCurrency('EUR')">EUR</span>
+                    <span class="currency-btn" data-currency="GBP" onclick="toggleCurrency('GBP')">GBP</span>
                 </div>
                 <div class="chart-type-selector">
-                    <label for="chartType">Grafik Türü:</label>
-                    <select id="chartType" onchange="updateReportChart()" aria-label="Grafik türünü seç">
+                    <label>Grafik Türü:</label>
+                    <select id="chartType" onchange="updateReportChart()">
                         <option value="line">Çizgi</option>
                         <option value="bar">Sütun</option>
                         <option value="area">Alan</option>
@@ -330,7 +281,7 @@
 
     <div id="statsModal" class="modal">
         <div class="modal-content">
-            <span class="close-button" onclick="closeModal('statsModal')" role="button" tabindex="0" aria-label="İstatistikler modalını kapat">×</span>
+            <span class="close-button" onclick="closeModal('statsModal')">×</span>
             <h2>İstatistikler</h2>
             <div class="general-stats">
                 <div class="general-stat-card">
@@ -365,10 +316,10 @@
                 </div>
             </div>
             <div class="chart-container">
-                <div class="chart-wrapper">
+                <div class="stat-card">
                     <canvas id="paymentRatioChart"></canvas>
                 </div>
-                <div class="chart-wrapper">
+                <div class="stat-card">
                     <canvas id="currencyRatioChart"></canvas>
                 </div>
             </div>
@@ -380,50 +331,44 @@
 
     <div id="accountingModal" class="modal">
         <div class="modal-content">
-            <span class="close-button" onclick="closeModal('accountingModal')" role="button" tabindex="0" aria-label="Muhasebe modalını kapat">×</span>
+            <span class="close-button" onclick="closeModal('accountingModal')">×</span>
             <h2>Muhasebe</h2>
-            <div class="date-filter-container">
-                <div class="time-range-selector">
-                    <select id="accountingTimeRange" onchange="updateAccountingDateRange()" aria-label="Muhasebe için zaman aralığı seç">
-                        <option value="today">Bugün</option>
-                        <option value="yesterday">Dün</option>
-                        <option value="lastWeek">Son 7 Gün</option>
-                        <option value="lastMonth">Son 30 Gün</option>
-                        <option value="custom">Özel Tarih</option>
-                    </select>
-                </div>
-                <div class="date-filter" id="accountingDateFilter" style="display:none">
-                    <div class="date-filter-item">
-                        <label for="accountingStartDate">Başlangıç Tarihi</label>
-                        <input type="date" id="accountingStartDate" max="">
-                    </div>
-                    <div class="date-filter-item">
-                        <label for="accountingEndDate">Bitiş Tarihi</label>
-                        <input type="date" id="accountingEndDate" max="">
-                    </div>
-                </div>
-                <button class="filter-button" onclick="showAccountingSummary()" aria-label="Muhasebe özetini göster">Göster</button>
+            <div class="time-range-selector">
+                <select id="accountingTimeRange" onchange="updateAccountingDateRange()">
+                    <option value="today">Bugün</option>
+                    <option value="yesterday">Dün</option>
+                    <option value="lastWeek">Son 7 Gün</option>
+                    <option value="lastMonth">Son 30 Gün</option>
+                    <option value="custom">Özel Tarih</option>
+                </select>
             </div>
+            <div id="accountingDateFilter" class="date-filter" style="display: none;">
+                <div class="date-filter-item">
+                    <label>Başlangıç Tarihi</label>
+                    <input type="date" id="accountingStartDate">
+                </div>
+                <div class="date-filter-item">
+                    <label>Bitiş Tarihi</label>
+                    <input type="date" id="accountingEndDate">
+                </div>
+            </div>
+            <button class="filter-button" onclick="showAccountingSummary()">Göster</button>
             <div id="accountingSummary" class="accounting-summary"></div>
-            <div class="chart-container">
-                <div class="chart-wrapper">
-                    <canvas id="accountingPieChart"></canvas>
-                </div>
-            </div>
+            <canvas id="accountingPieChart"></canvas>
         </div>
     </div>
 
     <div id="storageModal" class="modal">
         <div class="modal-content">
-            <span class="close-button" onclick="closeModal('storageModal')" role="button" tabindex="0" aria-label="Depolama modalını kapat">×</span>
+            <span class="close-button" onclick="closeModal('storageModal')">×</span>
             <h2>Depolama Durumu</h2>
             <div class="storage-metrics">
                 <div class="metric">
                     <span>Toplam Kayıt:</span>
-                    <span id="totalRecords">0</span>/<span id="maxRecords">5,000</span>
+                    <span><span id="totalRecords">0</span>/<span id="maxRecords">5,000</span></span>
                 </div>
                 <div class="progress-container">
-                    <div class="progress-bar" id="storageProgress"></div>
+                    <div id="storageProgress" class="progress-bar" style="width: 0%;"></div>
                 </div>
                 <div class="progress-text" id="progressPercent">0%</div>
                 <div class="storage-details">
@@ -444,11 +389,11 @@
                         <span class="detail-value" id="remainingRecords">5,000</span>
                     </div>
                 </div>
-                <button class="report-button" onclick="generatePDFReport()" aria-label="Raporu PDF olarak indir">Raporla</button>
             </div>
+            <button class="report-button" onclick="generatePDFReport()">Raporla</button>
         </div>
     </div>
 
     <script src="script.js"></script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9422d2ffeea45912',t:'MTc0NzY0OTYzMy4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</body>
 </html>
