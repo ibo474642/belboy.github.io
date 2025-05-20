@@ -62,6 +62,15 @@ body {
     box-shadow: 0 2px 10px rgba(0,0,0,0.3);
 }
 
+.date-currency-row {
+    display: flex;
+    gap: 20px;
+}
+
+.date-currency-row .form-group {
+    flex: 1;
+}
+
 .form-group {
     margin-bottom: 15px;
 }
@@ -1327,5 +1336,17 @@ tr:nth-child(even) {
     button, .filter-button, .report-button {
         font-size: 0.9rem;
         padding: 12px;
+    }
+
+    /* Tarih ve döviz tipi alanları için mobil uyumluluk ayarı */
+    .date-currency-row {
+        overflow-x: auto; /* Küçük ekranlarda kaydırma imkanı */
+        white-space: nowrap; /* Alanların yan yana kalmasını sağlar */
+    }
+
+    .date-currency-row .form-group {
+        display: inline-block; /* Alanların yan yana kalmasını sağlar */
+        width: auto; /* Genişlikleri otomatik olarak ayarlanır */
+        min-width: 150px; /* Minimum genişlik belirleyerek alanların okunabilir olmasını sağlar */
     }
 }
