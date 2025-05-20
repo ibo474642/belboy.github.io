@@ -300,8 +300,8 @@ button:active {
 }
 
 .menu-item:before {
-    content: "•";
-    margin-right: 8px;
+    content: "";
+    margin-right: -7px;
     color: var(--primary-color);
 }
 
